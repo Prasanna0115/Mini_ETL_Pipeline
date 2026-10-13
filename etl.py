@@ -14,24 +14,37 @@ def extract():
 
 def transform(rows):
     processed = []
+    invalid_count = 0
 
     for row in rows:
-        name = row["name"].strip()
-        department = row["department"].strip()
-        salary = float(row["salary"])
+        employee_id = (row.get("employee_id") or "").strip()
+        name = (row.get("name") or "").strip()
+        department = (row.get("department") or "").strip()
+        salary_text = (row.get("salary") or "").strip()
 
-        if not name or salary < 0:
+        if not employee_id or not name or not department:
+            invalid_count += 1
+            continue
+
+        try:
+            salary = float(salary_text)
+        except ValueError:
+            invalid_count += 1
+            continue
+
+        if salary < 0:
+            invalid_count += 1
             continue
 
         processed.append({
-            "employee_id": row["employee_id"].strip(),
+            "employee_id": employee_id,
             "name": name.title(),
             "department": department,
             "salary": salary,
             "annual_salary": salary * 12
         })
 
-    return processed
+    return processed, invalid_count
 
 
 def load(rows):
@@ -53,11 +66,12 @@ def load(rows):
 
 def main():
     rows = extract()
-    cleaned_rows = transform(rows)
+    cleaned_rows, invalid_count = transform(rows)
     load(cleaned_rows)
 
     print(f"Extracted records: {len(rows)}")
     print(f"Processed records: {len(cleaned_rows)}")
+    print(f"Invalid records skipped: {invalid_count}")
     print(f"Output saved to: {OUTPUT_FILE}")
 
 
